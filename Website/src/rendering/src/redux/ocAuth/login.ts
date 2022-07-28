@@ -51,7 +51,7 @@ const login = createOcAsyncThunk<RequiredDeep<AccessToken>, LoginActionRequest>(
     if (transferToken) {
       thunkAPI.dispatch(transferAnonOrder(transferToken));
     } else {
-      thunkAPI.dispatch(retrieveCart());
+      thunkAPI.dispatch(retrieveCart(null));
       //thunkAPI.dispatch(mergeAnonCart());
     }
     thunkAPI.dispatch(retrieveOrders());
