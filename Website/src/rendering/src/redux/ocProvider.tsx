@@ -1,6 +1,7 @@
 import React, { FunctionComponent, useEffect, useState } from 'react';
 import { initializeAuth } from './ocAuth';
 import logout from './ocAuth/logout';
+import { retrieveOrders } from './ocUnsubmittedOrders';
 import { retrieveCart } from './ocCurrentCart';
 import { useAppDispatch, useAppSelector } from './store';
 import { getUser } from './ocUser';
@@ -55,10 +56,11 @@ const OcProvider: FunctionComponent = ({ children }) => {
     setHasCheckedForToken(true);
   }, [dispatch, router]);
 
-  const { ocAuth, ocUser, ocCurrentCart } = useAppSelector((s) => ({
+  const { ocAuth, ocUser, ocCurrentCart, ocUnsubmittedOrders } = useAppSelector((s) => ({
     ocAuth: s.ocAuth,
     ocUser: s.ocUser,
     ocCurrentCart: s.ocCurrentCart,
+    ocUnsubmittedOrders: s.ocUnsubmittedOrders,
   }));
 
   useEffect(() => {
@@ -72,11 +74,14 @@ const OcProvider: FunctionComponent = ({ children }) => {
           dispatch(getUser());
         }
         if (!ocCurrentCart.initialized) {
-          dispatch(retrieveCart());
+          dispatch(retrieveCart(null));
+        }
+        if (!ocUnsubmittedOrders.initialized) {
+          dispatch(retrieveOrders());
         }
       }
     }
-  }, [dispatch, ocAuth, ocUser, ocCurrentCart, hasCheckedForToken]);
+  }, [dispatch, ocAuth, ocUser, ocCurrentCart, ocUnsubmittedOrders, hasCheckedForToken]);
 
   return <>{children}</>;
 };

@@ -1,5 +1,6 @@
 import CartSummary from './CartSummary';
 import LineItemList from './LineItemList';
+import OrderList from './OrderList';
 import PromoInput from './PromoInput';
 import Link from 'next/link';
 import useOcCurrentCart from '../../hooks/useOcCurrentCart';
@@ -45,9 +46,22 @@ const CartDetails = (): JSX.Element => {
     }
   };
 
+  const getCartName = () => {
+    if (!initialized) {
+      return <Skeleton containerClassName="skeleton-heading" height={30} />;
+    } else if (order?.LineItemCount) {
+      // TODO: Change to order?.xp?.Name
+      return <h2>{order?.ID}</h2>;
+    } else {
+      return <></>;
+    }
+  };
+
   return (
     <div className="cart-details shop-container">
       <h1>Shopping cart</h1>
+      <OrderList />
+      {getCartName()}
       <div className="cart-details-grid">
         <div className="cart-details-items">
           <LineItemList editable={true} />

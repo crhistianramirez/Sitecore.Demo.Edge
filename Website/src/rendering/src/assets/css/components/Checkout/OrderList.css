@@ -1,0 +1,28 @@
+.cart-details .manage-projects {
+  @apply mb-4;
+
+  .form {
+    @apply flex;
+  }
+
+  .selected-project {
+    @apply mr-2;
+    width: 40%;
+  }
+
+  .form > :not([hidden]) ~ :not([hidden]) {
+    @apply mt-0;
+  }
+
+  .btn-secondary.btn-delete {
+    @apply mr-auto;
+  }
+
+  .btn-secondary {
+    @apply text-sm mr-2
+  }
+
+  .btn-new {
+    @apply mr-0;
+  }
+}

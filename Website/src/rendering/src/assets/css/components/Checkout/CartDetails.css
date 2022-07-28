@@ -5,6 +5,10 @@
     @apply text-2xl font-bold mb-3;
   }
 
+  h2 {
+    @apply font-bold mb-3;
+  }
+
   &-grid {
     @apply flex flex-col-reverse;
     @apply lg:flex-row;

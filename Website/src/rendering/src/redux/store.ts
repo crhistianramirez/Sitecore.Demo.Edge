@@ -6,6 +6,7 @@ import ocUser from './ocUser';
 import ocProductCache from './ocProductCache';
 import ocProductList from './ocProductList';
 import ocProductDetail from './ocProductDetail';
+import ocUnsubmittedOrders from './ocUnsubmittedOrders';
 import ocCurrentCart from './ocCurrentCart';
 import ocAddressBook from './ocAddressBook';
 
@@ -19,6 +20,7 @@ const store = configureStore({
     ocProductList,
     ocProductDetail,
     ocCurrentCart,
+    ocUnsubmittedOrders,
   },
 });
 

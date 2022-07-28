@@ -1,7 +1,16 @@
 import Head from 'next/head';
-import { BuyerProduct, LineItem, RequiredDeep, Spec, Variant } from 'ordercloud-javascript-sdk';
-import { FormEvent, useCallback, useEffect, useState } from 'react';
+import {
+  BuyerProduct,
+  LineItem,
+  Order,
+  RequiredDeep,
+  Spec,
+  Variant,
+} from 'ordercloud-javascript-sdk';
+import { ChangeEvent, FormEvent, useCallback, useEffect, useState } from 'react';
 import { createLineItem } from '../../redux/ocCurrentCart';
+import useOcAuth from '../../hooks/useOcAuth';
+import useOcCurrentCart from '../../hooks/useOcCurrentCart';
 import { useAppDispatch, useAppSelector } from '../../redux/store';
 import QuantityInput from '../ShopCommon/QuantityInput';
 import ProductSpecList, { OrderCloudSpec } from './ProductSpecList';
@@ -36,9 +45,13 @@ const ProductDetailsContent = ({
   const [isLoading, setIsLoading] = useState(false);
   const [specValues, setSpecValues] = useState<OrderCloudSpec[]>([]);
   const [variant, setVariant] = useState<Variant>(undefined);
+  const { isAnonymous, isAuthenticated } = useOcAuth();
+  const currentOrderState = useOcCurrentCart();
   const loading = initialLoading || isLoading;
 
   const pageTitle = loading ? 'loading...' : product ? product.Name : 'Product not found';
+
+  const isUserLoggedIn = !isAnonymous && isAuthenticated;
 
   // Handle LineItem edits
   const lineItemId = '';
@@ -50,6 +63,8 @@ const ProductDetailsContent = ({
   const [quantity, setQuantity] = useState(
     lineItem ? lineItem.Quantity : (product && product.PriceSchedule.MinQuantity) || 1
   );
+
+  const [orderId, setOrderId] = useState(currentOrderState.order?.ID);
 
   const determineDefaultOptionId = (spec: Spec) => {
     if (spec.DefaultOptionID) {
@@ -184,21 +199,24 @@ const ProductDetailsContent = ({
       setIsLoading(true);
       const response = await dispatch(
         createLineItem({
-          ProductID: product.ID,
-          Quantity: quantity,
-          Specs: specValues,
-          xp: {
-            StatusByQuantity: {
-              Submitted: quantity,
-              Open: 0,
-              Backordered: 0,
-              Canceled: 0,
-              CancelRequested: 0,
-              CancelDenied: 0,
-              Returned: 0,
-              ReturnRequested: 0,
-              ReturnDenied: 0,
-              Complete: 0,
+          orderId: orderId != '' ? orderId : null,
+          lineItem: {
+            ProductID: product.ID,
+            Quantity: quantity,
+            Specs: specValues,
+            xp: {
+              StatusByQuantity: {
+                Submitted: quantity,
+                Open: 0,
+                Backordered: 0,
+                Canceled: 0,
+                CancelRequested: 0,
+                CancelDenied: 0,
+                Returned: 0,
+                ReturnRequested: 0,
+                ReturnDenied: 0,
+                Complete: 0,
+              },
             },
           },
         })
@@ -209,11 +227,16 @@ const ProductDetailsContent = ({
 
       // Retrieve the lineitem that was just created
       const resPayload: { LineItems?: LineItem[] } = response?.payload;
+      const resOrder: { Order?: Order } = response?.payload;
       const lineItem = resPayload?.LineItems.find((item) => item.ProductID === product.ID);
 
       logAddToCart(lineItem, quantity);
+
+      if (orderId == '') {
+        setOrderId(resOrder?.Order.ID);
+      }
     },
-    [dispatch, product, specValues, quantity, dispatchDiscoverAddToCartEvent]
+    [dispatch, orderId, product, specValues, quantity, dispatchDiscoverAddToCartEvent]
   );
 
   const productImageProps =
@@ -293,8 +316,39 @@ const ProductDetailsContent = ({
     </button>
   );
 
+  const handleProjectChange = (e: ChangeEvent<HTMLSelectElement>) => {
+    setOrderId(e.target.value);
+  };
+
+  const selectProject = isUserLoggedIn ? (
+    initialLoading || !currentOrderState.initialized ? (
+      <Skeleton className="selected-project" />
+    ) : (
+      <select
+        className="selected-project"
+        required
+        defaultValue={currentOrderState.order?.ID}
+        onChange={handleProjectChange}
+        value={orderId}
+      >
+        {currentOrderState.orders?.map((order) => (
+          // TODO: change value to order?.xp?.Name
+          <option key={order.ID} value={order.ID}>
+            {order.ID}
+          </option>
+        ))}
+        <option key="new" value="">
+          - Create new project -
+        </option>
+      </select>
+    )
+  ) : (
+    <></>
+  );
+
   const productAddToCart = (
-    <div className="product-add-to-cart">
+    <div className="product-add-to-cart form">
+      {selectProject}
       {btnAddToCart}
       {btnSaveLater}
       {btnWishList}
