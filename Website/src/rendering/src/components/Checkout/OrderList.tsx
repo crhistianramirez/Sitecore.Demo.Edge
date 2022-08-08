@@ -1,4 +1,4 @@
-import { ChangeEvent, useState } from 'react';
+import { ChangeEvent } from 'react';
 import useOcCurrentOrderState from '../../hooks/useOcCurrentCart';
 import {
   retrieveOrders,
@@ -16,7 +16,6 @@ import useOcAuth from '../../hooks/useOcAuth';
 const OrderList = (): JSX.Element => {
   const dispatch = useAppDispatch();
   const { order, orders, initialized } = useOcCurrentOrderState();
-  const [isLoading, setIsLoading] = useState(false);
   const { isAnonymous } = useOcAuth();
 
   const handleGetOrders = async () => {
@@ -29,7 +28,6 @@ const OrderList = (): JSX.Element => {
 
   const handleDeleteOrder = async () => {
     await dispatch(deleteCurrentOrder());
-    await dispatch(retrieveOrders());
   };
 
   // TODO: add functionality to button
@@ -40,13 +38,12 @@ const OrderList = (): JSX.Element => {
       className="btn-make-default btn-secondary"
       aria-label="Make Default"
       type="button"
-      onClick={() => handleClearOrders()}
+      //onClick={() => handleClearOrders()}
     >
       Make Default
     </button>
   );
 
-  // TODO: add functionality to button
   const btnDelete = !initialized ? (
     <Skeleton width={150} height={44} className="btn-delete btn-secondary" />
   ) : (
@@ -68,7 +65,7 @@ const OrderList = (): JSX.Element => {
       className="btn-share btn-secondary"
       aria-label="Share"
       type="button"
-      onClick={() => handleGetOrders()}
+      //onClick={() => handleGetOrders()}
     >
       <FontAwesomeIcon icon={faShareAlt} size="lg" /> Share
     </button>
@@ -97,7 +94,7 @@ const OrderList = (): JSX.Element => {
       defaultValue={order?.ID}
       onChange={handleProjectChange}
     >
-      {orders.map((order) => (
+      {orders?.map((order) => (
         // TODO: change value to order?.xp?.Name
         <option key={order.ID} value={order.ID}>
           {order.ID}

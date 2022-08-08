@@ -58,6 +58,16 @@ async function createOrder(orderId: string): Promise<RequiredDeep<DOrder>> {
   return await Orders.Create<DOrder>('All', { ID: orderId, xp: { DeliveryType: 'Ship' } });
 }
 
+const clearOrderAndRefreshState = createOcAsyncThunk<undefined, undefined>(
+  'ocCurrentCart/clearOrderAndRefreshState',
+  async (_, ThunkAPI) => {
+    ThunkAPI.dispatch(clearCurrentOrder());
+    ThunkAPI.dispatch(retrieveCart(null));
+    ThunkAPI.dispatch(retrieveOrders());
+    return undefined;
+  }
+);
+
 export const removeAllPayments = createOcAsyncThunk<undefined, undefined>(
   'ocCurrentCart/removeAllPayments',
   async (_, ThunkAPI) => {
@@ -237,61 +247,74 @@ const mergeAnonOrder = async (
 export const retrieveCart = createOcAsyncThunk<RequiredDeep<DOrderWorksheet> | undefined, string>(
   'ocCurrentCart/retrieveCart',
   async (orderID, ThunkAPI) => {
+    let me;
     if (!orderID) {
-      const me = await Me.Get();
+      me = await Me.Get();
       orderID = me.xp?.defaultOrderID;
     }
 
-    // TODO: change searchOn to filter for exact match.
-    const response = orderID
-      ? await Me.ListOrders<DOrder>({
-          sortBy: ['DateCreated'],
-          filters: { Status: 'Unsubmitted' },
-          search: orderID,
-          searchOn: ['ID'],
-        })
-      : await Me.ListOrders<DOrder>({
-          sortBy: ['DateCreated'],
-          filters: { Status: 'Unsubmitted' },
-        });
+    let response;
+    if (orderID) {
+      response = await Me.ListOrders<DOrder>({
+        sortBy: ['DateCreated'],
+        filters: { Status: 'Unsubmitted', ID: orderID },
+      });
+    }
+
     let existingOrder = response.Items[0];
 
-    // TODO: Move to login.ts after calling retrieveCart()
+    // If order was not found, fallback to first order
+    if (!existingOrder) {
+      response = await Me.ListOrders<DOrder>({
+        sortBy: ['DateCreated'],
+        filters: { Status: 'Unsubmitted' },
+      });
+
+      existingOrder = response.Items[0];
+    }
+
+    // TODO: Move to login.ts after calling retrieveCart()?
     const mergedAnonOrder = await mergeAnonOrder(existingOrder);
     if (mergedAnonOrder) {
       existingOrder = mergedAnonOrder;
     }
 
-    if (existingOrder) {
-      const worksheet = await IntegrationEvents.GetWorksheet<DOrderWorksheet>(
-        'All',
-        existingOrder.ID
-      );
-      if (
-        worksheet.Order.BillingAddress &&
-        worksheet.ShipEstimateResponse &&
-        worksheet.ShipEstimateResponse.ShipEstimates &&
-        worksheet.ShipEstimateResponse.ShipEstimates.length &&
-        worksheet.ShipEstimateResponse.ShipEstimates.filter((se) => !se.SelectedShipMethodID)
-          .length === 0
-      ) {
-        ThunkAPI.dispatch(retrievePayments(existingOrder.ID));
-      }
-      ThunkAPI.dispatch(retrievePromotions(existingOrder.ID));
-      if (mergedAnonOrder) {
-        // This is a bit of a hack but since we're updating the cart right before we get the worksheet
-        // there can be a race condition where the order worksheet is stale so anytime we merge an order
-        // get the order worksheet once more
-        return IntegrationEvents.GetWorksheet<DOrderWorksheet>('All', existingOrder.ID);
-      }
-
-      if (!orderID) {
-        Me.Patch<DMeUser>({ xp: { defaultOrderID: existingOrder.ID } });
-      }
-
-      return worksheet;
+    if (!existingOrder) {
+      return undefined;
     }
-    return undefined;
+
+    const worksheet = await IntegrationEvents.GetWorksheet<DOrderWorksheet>(
+      'All',
+      existingOrder.ID
+    );
+    if (
+      worksheet.Order.BillingAddress &&
+      worksheet.ShipEstimateResponse &&
+      worksheet.ShipEstimateResponse.ShipEstimates &&
+      worksheet.ShipEstimateResponse.ShipEstimates.length &&
+      worksheet.ShipEstimateResponse.ShipEstimates.filter((se) => !se.SelectedShipMethodID)
+        .length === 0
+    ) {
+      ThunkAPI.dispatch(retrievePayments(existingOrder.ID));
+    }
+    ThunkAPI.dispatch(retrievePromotions(existingOrder.ID));
+    if (mergedAnonOrder) {
+      // TODO: Confirm if this is a workaround for an OrderCloud bug? Why is there a race condition?
+      // This is a bit of a hack but since we're updating the cart right before we get the worksheet
+      // there can be a race condition where the order worksheet is stale so anytime we merge an order
+      // get the order worksheet once more
+      return IntegrationEvents.GetWorksheet<DOrderWorksheet>('All', existingOrder.ID);
+    }
+
+    if (!me) {
+      me = await Me.Get();
+    }
+
+    if (me?.xp?.defaultOrderID != existingOrder.ID) {
+      Me.Patch<DMeUser>({ xp: { defaultOrderID: existingOrder.ID } });
+    }
+
+    return worksheet;
   }
 );
 
@@ -315,8 +338,7 @@ export const deleteCurrentOrder = createOcAsyncThunk<void, void>(
       await Orders.Delete('All', ocCurrentCart.order.ID);
     }
     // eslint-disable-next-line no-use-before-define
-    ThunkAPI.dispatch(clearCurrentOrder());
-    ThunkAPI.dispatch(retrieveCart(null));
+    ThunkAPI.dispatch(clearOrderAndRefreshState());
   }
 );
 
@@ -346,8 +368,7 @@ export const createLineItem = createOcAsyncThunk<
 
   if (!!request.orderId && request.orderId != currentOrderId) {
     await ThunkAPI.dispatch(retrieveCart(request.orderId));
-
-    // Do we need to getState again after the above?
+    // refresh state
     ocCurrentCart = ThunkAPI.getState().ocCurrentCart;
     orderId = ocCurrentCart.order ? ocCurrentCart.order.ID : undefined;
   }
@@ -553,7 +574,7 @@ export const submitOrder = createOcAsyncThunk<RecentOrder, (orderID: string) => 
     await Orders.Validate('All', ocCurrentCart.order.ID);
     const submitResponse = await Orders.Submit<DOrder>('All', ocCurrentCart.order.ID);
     // eslint-disable-next-line no-use-before-define
-    ThunkAPI.dispatch(clearCurrentOrder());
+    ThunkAPI.dispatch(clearOrderAndRefreshState());
     return {
       order: submitResponse,
       lineItems: ocCurrentCart.lineItems,
