@@ -7,11 +7,17 @@ export interface DProductXp {
   ProductType?: string;
   ProductUrl: string;
   ProductGroup?: string;
-  Facets?: Record<string, string | string[]>[];
   Images?: {
     ThumbnailUrl?: string;
     Url?: string;
   }[];
   ShortDescription?: string;
   Brand?: string;
+  CCID?: string;
+  CCIDs?: string[];
+  Price?: string; // using b2c retail price as basis for sorting, may not match real price user sees
+  Facets?: {
+    color?: string;
+    size?: string;
+  };
 }

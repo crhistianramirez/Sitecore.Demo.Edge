@@ -6,7 +6,9 @@ import { Suggestion } from '../models/discover/Suggestion';
 const commonProps = {
   loaded: true,
   loading: false,
-  dispatch: (): Promise<void> => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any
+  dispatch: (action: any): any => {
+    console.log(action);
     return null;
   },
 };
@@ -93,7 +95,7 @@ export const mockDiscoverData = {
     ...commonProps,
     ...previewSearchCommonProps,
     ...productsProps,
-    rfkId: 'rfkid_6',
+    rfkId: 'rfkid_6', // PreviewSearch
     categories: [
       {
         id: 'suggestion_idZXF1aXBtZW50',
@@ -120,7 +122,7 @@ export const mockDiscoverData = {
   fullPageSearchProps: {
     ...commonProps,
     ...productsProps,
-    rfkId: 'rfkid_7',
+    rfkId: 'rfkid_7', // FullPageSearch
     error: '',
     keyphrase: 'pump',
     totalItems: 3,
@@ -129,6 +131,21 @@ export const mockDiscoverData = {
       {
         display_name: 'Price',
         facetType: 'price',
+        number_of_products: 3,
+        values: [
+          {
+            count: 2,
+            id: 'facet_ideyJtYXgiOjE1LCJtaW4iOjV9',
+            in_content: 'product',
+            max: 15,
+            min: 5,
+            text: '5 - 15',
+          },
+        ],
+      },
+      {
+        display_name: 'Final price',
+        facetType: 'final_price',
         number_of_products: 3,
         values: [
           {
@@ -189,5 +206,20 @@ export const mockDiscoverData = {
     suggestions: [] as Suggestion[],
     keyphrase: '',
     selectedKeyword: '',
+  },
+
+  searchInputProps: {
+    keyphrase: 'fitness equipment',
+    setSearchString: (): void => {
+      return null;
+    },
+    onFocus: (): void => {
+      return null;
+    },
+    placeholder: 'I am shopping for...',
+    redirectUrl: '/shop/products?q=',
+    setOpen: (): void => {
+      return null;
+    },
   },
 };

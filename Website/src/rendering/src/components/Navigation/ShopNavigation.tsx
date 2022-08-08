@@ -1,7 +1,5 @@
 import Link from 'next/link';
 import React, { useRef, useState } from 'react';
-import { Actions, PageController } from '@sitecore-discover/react';
-import mapProductsForDiscover from '../../../src/helpers/discover/ProductMapper';
 import useOcCurrentCart from '../../hooks/useOcCurrentCart';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faShoppingCart, faUserCircle } from '@fortawesome/free-solid-svg-icons';
@@ -12,9 +10,12 @@ import PreviewSearch, { PreviewSearchProps } from '../PreviewSearch/PreviewSearc
 import { isAuthenticationEnabled } from '../../services/AuthenticationService';
 import ClickOutside from '../ShopCommon/ClickOutside';
 import AccountPopup from './AccountPopup';
+import { isDiscoverEnabled } from '../../helpers/DiscoverHelper';
+import OrderCloudPreviewSearch from '../PreviewSearch/OrderCloudPreviewSearch';
+import { dispatchDiscoverCartStatusListActionEvent } from '../../helpers/discover/CartStatusDispatcher';
 
 export type ShopNavigationProps = {
-  previewSearchProps?: PreviewSearchProps; // For Storybook support
+  storyBookPreviewSearchProps?: PreviewSearchProps; // For Storybook support
 };
 
 const ShopNavigation = (props: ShopNavigationProps): JSX.Element => {
@@ -43,27 +44,19 @@ const ShopNavigation = (props: ShopNavigationProps): JSX.Element => {
     </li>
   );
 
-  // TODO: Try to remove code duplication here and in LineItemList.tsx
-  const dispatchDiscoverCartStatusListActionEvent = () => {
-    PageController.getDispatcher().dispatch({
-      type: Actions.CART_STATUS,
-      payload: {
-        products: mapProductsForDiscover(lineItems),
-      },
-    });
-  };
-
   const handleCartIconClick = () => {
     if (!isMiniCartOpen && lineItems?.length !== undefined) {
-      dispatchDiscoverCartStatusListActionEvent();
+      dispatchDiscoverCartStatusListActionEvent(lineItems);
     }
     setIsMiniCartOpen(!isMiniCartOpen);
   };
 
-  const previewSearchWidget = props.previewSearchProps ? (
-    <PreviewSearch {...props.previewSearchProps} />
+  const previewSearchWidget = props.storyBookPreviewSearchProps ? (
+    <PreviewSearch {...props.storyBookPreviewSearchProps} />
+  ) : isDiscoverEnabled ? (
+    <DiscoverWidget rfkId="rfkid_6" /> // PreviewSearch
   ) : (
-    <DiscoverWidget rfkId="rfkid_6" />
+    <OrderCloudPreviewSearch />
   );
 
   const miniCartActiveClass = isMiniCartOpen ? 'active' : '';
