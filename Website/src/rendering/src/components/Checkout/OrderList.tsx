@@ -12,6 +12,7 @@ import Skeleton from 'react-loading-skeleton';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faShareAlt, faTrashAlt } from '@fortawesome/free-solid-svg-icons';
 import useOcAuth from '../../hooks/useOcAuth';
+import Spinner from '../../components/ShopCommon/Spinner';
 
 const OrderList = (): JSX.Element => {
   const dispatch = useAppDispatch();
@@ -20,9 +21,12 @@ const OrderList = (): JSX.Element => {
   const [selectedOrder, setSelectedOrder] = useState(order?.ID);
   const [orderName, setOrderName] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleDeleteOrder = async () => {
+    setIsLoading(true);
     await dispatch(deleteCurrentOrder());
+    setIsLoading(false);
   };
 
   const btnDelete = !initialized ? (
@@ -33,7 +37,9 @@ const OrderList = (): JSX.Element => {
       aria-label="Delete Project"
       type="button"
       onClick={() => handleDeleteOrder()}
+      disabled={isLoading}
     >
+      <Spinner loading={isLoading} />
       <FontAwesomeIcon icon={faTrashAlt} size="lg" /> Delete Project
     </button>
   );
@@ -47,7 +53,9 @@ const OrderList = (): JSX.Element => {
       aria-label="Share"
       type="button"
       //onClick={() => getShareLink()}
+      disabled={isLoading}
     >
+      <Spinner loading={isLoading} />
       <FontAwesomeIcon icon={faShareAlt} size="lg" /> Share
     </button>
   );
@@ -64,16 +72,20 @@ const OrderList = (): JSX.Element => {
       aria-label="New Project"
       type="button"
       onClick={openCreateProjectModel}
+      disabled={isLoading}
     >
+      <Spinner loading={isLoading} />
       <FontAwesomeIcon icon={faPlus} size="lg" /> New Project
     </button>
   );
 
   const updateSelectedProject = (orderID: string) => {
     if (order.ID != orderID) {
+      setIsLoading(true);
       clearCurrentOrder();
       dispatch(retrieveCart(orderID));
       setSelectedOrder(orderID);
+      setIsLoading(false);
     }
   };
 
@@ -90,11 +102,13 @@ const OrderList = (): JSX.Element => {
   };
 
   const handleModalSubmit = async () => {
+    setIsLoading(true);
     setShowModal(false);
     const response = await dispatch(createNewOrder(orderName));
     setOrderName('');
     const order = response?.payload as Order;
     updateSelectedProject(order?.ID);
+    setIsLoading(false);
   };
 
   const selectProject = !initialized ? (
@@ -105,6 +119,7 @@ const OrderList = (): JSX.Element => {
       required
       value={selectedOrder}
       onChange={handleProjectChange}
+      disabled={isLoading}
     >
       {orders?.map((order) => (
         <option key={order.ID} value={order.ID}>

@@ -236,7 +236,7 @@ const ProductDetailsContent = ({
 
       logAddToCart(lineItem, quantity);
 
-      if (orderId == '') {
+      if (!!resOrder?.Order?.ID && orderId != resOrder?.Order?.ID) {
         setOrderId(resOrder?.Order.ID);
         setCreateNewProject(false);
       }
@@ -288,7 +288,7 @@ const ProductDetailsContent = ({
   const overviewProps = {
     items: [
       {
-        heading: 'Full Desription',
+        heading: 'Full Description',
         description: product?.Description,
         disabled: false,
       },
@@ -358,6 +358,7 @@ const ProductDetailsContent = ({
         defaultValue={currentOrderState.order?.ID}
         onChange={handleProjectChange}
         value={orderId}
+        disabled={loading}
       >
         {currentOrderState.orders?.map((order) => (
           <option key={order.ID} value={order.ID}>

@@ -384,10 +384,12 @@ export const createLineItem = createOcAsyncThunk<
   let orderId;
   const currentOrderId = ocCurrentCart.order ? ocCurrentCart.order.ID : undefined;
 
-  if (!!request.orderId && request.orderId != currentOrderId) {
-    await ThunkAPI.dispatch(retrieveCart(request.orderId));
-    // refresh state
-    ocCurrentCart = ThunkAPI.getState().ocCurrentCart;
+  if (!!request.orderId) {
+    if (request.orderId != currentOrderId) {
+      await ThunkAPI.dispatch(retrieveCart(request.orderId));
+      // refresh state
+      ocCurrentCart = ThunkAPI.getState().ocCurrentCart;
+    }
     orderId = ocCurrentCart.order ? ocCurrentCart.order.ID : undefined;
   }
 
@@ -654,7 +656,8 @@ const ocCurrentCartSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    builder.addCase(createNewOrder.fulfilled, (state, action) => {});
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    builder.addCase(createNewOrder.fulfilled, () => {});
     builder.addCase(retrieveOrders.fulfilled, (state, action) => {
       if (action.payload) {
         state.orders = action.payload;
