@@ -2,7 +2,6 @@ import Head from 'next/head';
 import {
   BuyerProduct,
   LineItem,
-  Order,
   RequiredDeep,
   Spec,
   Variant,
@@ -65,7 +64,7 @@ const ProductDetailsContent = ({
   );
 
   const [orderId, setOrderId] = useState(currentOrderState.order?.ID);
-  const [createNewProject, setCreateNewProject] = useState(!!orderId);
+  const [createNewProject, setCreateNewProject] = useState(!orderId);
   const [orderName, setOrderName] = useState('');
   const [showModal, setShowModal] = useState(false);
 
@@ -76,6 +75,11 @@ const ProductDetailsContent = ({
 
     return spec.OptionCount ? spec.Options[0].ID : undefined;
   };
+
+  useEffect(() => {
+    setOrderId(currentOrderState.order?.ID);
+    setCreateNewProject(!currentOrderState.order?.ID);
+  }, [currentOrderState.order?.ID]);
 
   // Set the spec values on inital load and when the URL changes
   useEffect(() => {
@@ -231,15 +235,9 @@ const ProductDetailsContent = ({
 
       // Retrieve the lineitem that was just created
       const resPayload: { LineItems?: LineItem[] } = response?.payload;
-      const resOrder: { Order?: Order } = response?.payload;
       const lineItem = resPayload?.LineItems.find((item) => item.ProductID === product.ID);
 
       logAddToCart(lineItem, quantity);
-
-      if (!!resOrder?.Order?.ID && orderId != resOrder?.Order?.ID) {
-        setOrderId(resOrder?.Order.ID);
-        setCreateNewProject(false);
-      }
     },
     [dispatch, orderId, orderName, product, quantity, specValues, dispatchDiscoverAddToCartEvent]
   );
@@ -334,8 +332,9 @@ const ProductDetailsContent = ({
   );
 
   const handleProjectChange = (e: ChangeEvent<HTMLSelectElement>) => {
-    setOrderId(e.target.value);
-    setCreateNewProject(e.target.value == '');
+    const projectId = e.target.value;
+    setOrderId(projectId);
+    setCreateNewProject(projectId === '');
   };
 
   const handleProjectNameChange = (e: ChangeEvent<HTMLInputElement>) => {
