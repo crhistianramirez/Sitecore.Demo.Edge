@@ -1,8 +1,7 @@
 import { AccessToken, Auth, Configuration, Tokens } from 'ordercloud-javascript-sdk';
 import { createOcAsyncThunk, OcThrottle } from '../ocReduxHelpers';
 import { clearUser, getUser } from '../ocUser';
-import { clearAllOrders } from '../ocUnsubmittedOrders';
-import { clearCurrentOrder } from '../ocCurrentCart';
+import { clearCurrentOrder, clearAllOrders } from '../ocCurrentCart';
 import { cleanProductCache } from '../ocProductCache';
 import { orderCloudScope } from '../../constants/ordercloud-scope';
 

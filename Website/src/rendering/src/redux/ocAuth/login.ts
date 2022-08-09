@@ -1,6 +1,5 @@
 import { AccessToken, Auth, RequiredDeep, Tokens } from 'ordercloud-javascript-sdk';
-import { retrieveCart, transferAnonOrder } from '../ocCurrentCart';
-import { retrieveOrders } from '../ocUnsubmittedOrders';
+import { retrieveCart, retrieveOrders, transferAnonOrder } from '../ocCurrentCart';
 import { cleanProductCache } from '../ocProductCache';
 import { createOcAsyncThunk } from '../ocReduxHelpers';
 import { clearUser, getUser } from '../ocUser';
