@@ -1,7 +1,7 @@
 import React, { FunctionComponent, useEffect, useState } from 'react';
 import { initializeAuth } from './ocAuth';
 import logout from './ocAuth/logout';
-import { retrieveCart } from './ocCurrentCart';
+import { retrieveCart, retrieveOrders } from './ocCurrentCart';
 import { useAppDispatch, useAppSelector } from './store';
 import { getUser } from './ocUser';
 import { Configuration, Tokens } from 'ordercloud-javascript-sdk';
@@ -72,7 +72,8 @@ const OcProvider: FunctionComponent = ({ children }) => {
           dispatch(getUser());
         }
         if (!ocCurrentCart.initialized) {
-          dispatch(retrieveCart());
+          dispatch(retrieveCart(null));
+          dispatch(retrieveOrders());
         }
       }
     }
