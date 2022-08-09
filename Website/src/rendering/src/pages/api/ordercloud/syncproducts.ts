@@ -6,8 +6,10 @@ import {
   Auth,
   Buyers,
   Catalogs,
+  Categories,
   Configuration,
   PriceSchedules,
+  ProductFacets,
   Products,
   Specs,
   Tokens,
@@ -20,10 +22,9 @@ import {
   PROFILED_HEADSTART_CATALOG_ID,
   ADMIN_ADDRESS_ID,
 } from '../../../constants/seeding';
+import { uniq } from 'lodash';
+import { DProduct } from 'src/models/ordercloud/DProduct';
 
-// TODO: the part that creates products and the part that assigns them are coupled
-// it would be ideal to only create products once, and then assign the created products to
-// profiled and public buyer separately
 const handler: NextApiHandler<unknown> = async (request, response) => {
   const middlewareClientID = request.query?.MiddlewareClientID as string;
   const middlewareClientSecret = request.query?.MiddlewareClientSecret as string;
@@ -51,17 +52,39 @@ const handler: NextApiHandler<unknown> = async (request, response) => {
       filters: { Name: `${PUBLIC_BUYER_NAME}|${PROFILED_BUYER_NAME}` },
     });
 
-    // Create products for profiled buyer
-    const profiledBuyer = buyersList.Items.find((buyer) => buyer.Name === PROFILED_BUYER_NAME);
-    await postProducts(
-      profiledBuyer.DefaultCatalogID,
-      profiledBuyer.ID,
-      PROFILED_HEADSTART_CATALOG_ID
-    );
+    // Create or update product facets
+    await postFacets();
 
-    // Create products for public buyer
+    // Create the products
+    const createdProducts = await postProducts();
+
+    const productPromises = [];
+    const profiledBuyer = buyersList.Items.find((buyer) => buyer.Name === PROFILED_BUYER_NAME);
     const publicBuyer = buyersList.Items.find((buyer) => buyer.Name === PUBLIC_BUYER_NAME);
-    await postProducts(publicBuyer.DefaultCatalogID, publicBuyer.ID, PUBLIC_HEADSTART_CATALOG_ID);
+
+    for (const createdProduct of createdProducts) {
+      // Assign the created products to profiled buyer
+      productPromises.push(() =>
+        createProductAssignments(
+          createdProduct,
+          profiledBuyer.DefaultCatalogID,
+          profiledBuyer.ID,
+          PROFILED_HEADSTART_CATALOG_ID
+        )
+      );
+
+      // Assign the created products to public buyer
+      productPromises.push(() =>
+        createProductAssignments(
+          createdProduct,
+          publicBuyer.DefaultCatalogID,
+          publicBuyer.ID,
+          PUBLIC_HEADSTART_CATALOG_ID
+        )
+      );
+    }
+
+    await Promise.all(productPromises.map((productPromise) => productPromise()));
 
     return response.status(200).json('Products synced successfully');
     /* eslint-disable-next-line */
@@ -111,6 +134,8 @@ type ProductRow = {
   product_url: string;
   ccids: string;
   sku: string;
+  color: string;
+  size: string;
 };
 
 type VariantRow = {
@@ -122,7 +147,43 @@ type VariantRow = {
   size: string;
 };
 
-async function postProducts(catalogID: string, buyerID: string, headstartCatalogID: string) {
+async function postFacets() {
+  await Promise.all([
+    ProductFacets.Save('color', {
+      ID: 'color',
+      Name: 'Color',
+      XpPath: 'Facets.color',
+      MinCount: 1,
+      xp: {
+        Options: [
+          'Red',
+          'Orange',
+          'Yellow',
+          'Green',
+          'Blue',
+          'Purple',
+          'Grey',
+          'Black',
+          'White',
+          'Brown',
+          'Pink',
+          'Neutral',
+        ],
+      },
+    }),
+    ProductFacets.Save('size', {
+      ID: 'size',
+      Name: 'Size',
+      XpPath: 'Facets.size',
+      MinCount: 1,
+      xp: {
+        Options: ['S', 'M', 'L'],
+      },
+    }),
+  ]);
+}
+
+async function postProducts() {
   const csvStr = fs.readFileSync(
     path.join(__dirname + '/../../../../../discover-feeds/playsummit_product_feed.csv'),
     {
@@ -138,11 +199,14 @@ async function postProducts(catalogID: string, buyerID: string, headstartCatalog
   // Store the product promises (for normal products) in order to run them all together in parallel
   const productPromises = [];
 
+  // Store the created products in order to assign them to profiled and public buyer later
+  const createdProducts = [];
+
   for (const row of productFeed) {
     if (row.product_group !== row.sku) {
       // First time we encounter a variant of that product so we process it
       if (!productIdToVariantRowsMap.has(row.product_group)) {
-        await processSingleProduct(row, catalogID, buyerID, headstartCatalogID);
+        createdProducts.push(await processSingleProduct(row));
 
         // Initialize the map entry
         productIdToVariantRowsMap.set(row.product_group, []);
@@ -155,9 +219,12 @@ async function postProducts(catalogID: string, buyerID: string, headstartCatalog
       ]);
     } else {
       // Normal product without variants
-      productPromises.push(() => processSingleProduct(row, catalogID, buyerID, headstartCatalogID));
+      productPromises.push(() => processSingleProduct(row));
     }
   }
+
+  // Update facets for any product with variants to include all possible options
+  await patchProductWithVariantFacets(productIdToVariantRowsMap);
 
   // Create the specs for all the products with variants
   await createSpecs(productIdToVariantRowsMap);
@@ -168,15 +235,14 @@ async function postProducts(catalogID: string, buyerID: string, headstartCatalog
   // Update the variants (IDs, imageUrls)
   await updateVariants(productIdToVariantRowsMap);
 
-  return await Promise.all(productPromises.map((productPromise) => productPromise()));
+  createdProducts.push(
+    ...(await Promise.all(productPromises.map((productPromise) => productPromise())))
+  );
+
+  return createdProducts;
 }
 
-async function processSingleProduct(
-  row: ProductRow,
-  catalogID: string,
-  buyerID: string,
-  headstartCatalogID: string
-) {
+async function processSingleProduct(row: ProductRow) {
   // Post price schedule
   const priceScheduleRequest = {
     ID: row.product_group,
@@ -188,6 +254,7 @@ async function processSingleProduct(
       },
     ],
   };
+
   console.log(`Creating price schedule for ${row.product_group}`);
   await PriceSchedules.Save(priceScheduleRequest.ID, priceScheduleRequest);
 
@@ -224,21 +291,85 @@ async function processSingleProduct(
       Brand: row.brand,
       ProductUrl: row.product_url,
       CCID: row.ccids.split('|')?.[0],
+      CCIDs: row.ccids.split('|') || [],
+      Price: Number(row.final_price), // using b2c retail price as basis for sorting, may not match real price user sees
+      Facets: {
+        // avoid setting to empty string else will be indexed but not have a value so will appear empty
+        color: row.color ? row.color : null,
+        size: row.size ? row.size : null,
+      },
     },
   };
+
   console.log(`Creating product schedule for ${row.product_group}`);
   const createdProduct = await Products.Save(productRequest.ID, productRequest);
-  console.log(`Assigning product ${row.product_group} to catalog ${catalogID}`);
-  await Catalogs.SaveProductAssignment({
-    CatalogID: catalogID,
-    ProductID: createdProduct.ID,
+
+  return createdProduct;
+}
+
+async function createProductAssignments(
+  product: DProduct,
+  catalogID: string,
+  buyerID: string,
+  headstartCatalogID: string
+) {
+  const assignmentRequests = [];
+  const categoryIDs = product.xp.CCIDs;
+
+  console.log(
+    `Assigning product ${
+      product.ID
+    } to catalog ${catalogID}, to headstart catalog (usergroup) ${headstartCatalogID} and to categories ${categoryIDs.join(
+      ','
+    )}`
+  );
+  assignmentRequests.push(
+    Catalogs.SaveProductAssignment({
+      CatalogID: catalogID,
+      ProductID: product.ID,
+    })
+  );
+
+  assignmentRequests.push(
+    Products.SaveAssignment({
+      ProductID: product.ID,
+      BuyerID: buyerID,
+      UserGroupID: headstartCatalogID,
+    })
+  );
+
+  categoryIDs.forEach((categoryID) => {
+    assignmentRequests.push(
+      Categories.SaveProductAssignment(catalogID, {
+        CategoryID: categoryID,
+        ProductID: product.ID,
+      })
+    );
   });
-  console.log(`Assigning product ${row.product_group} to headstart catalog ${headstartCatalogID}`);
-  await Products.SaveAssignment({
-    ProductID: createdProduct.ID,
-    BuyerID: buyerID,
-    UserGroupID: headstartCatalogID,
-  });
+
+  await Promise.all(assignmentRequests);
+}
+
+async function patchProductWithVariantFacets(productIdToVariantRowsMap: Map<string, VariantRow[]>) {
+  // if a product has variants then then we want to make all of those facet options available for querying
+  const productIds = productIdToVariantRowsMap.keys();
+  for (const productId of productIds) {
+    const variants = productIdToVariantRowsMap.get(productId);
+    if (variants?.length) {
+      const colorFacets = uniq(variants.map((variant) => variant.color));
+      const sizeFacets = uniq(variants.map((variant) => variant.size));
+      if (colorFacets?.length || sizeFacets?.length) {
+        await Products.Patch(productId, {
+          xp: {
+            Facets: {
+              color: colorFacets,
+              size: sizeFacets,
+            },
+          },
+        });
+      }
+    }
+  }
 }
 
 async function createSpecs(productIdToVariantRowsMap: Map<string, VariantRow[]>) {

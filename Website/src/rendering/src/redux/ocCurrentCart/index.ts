@@ -14,7 +14,7 @@ import {
 import { DAddress } from '../../models/ordercloud/DAddress';
 import { DBuyerAddress } from '../../models/ordercloud/DBuyerAddress';
 import { DLineItem } from '../../models/ordercloud/DLineItem';
-import { DOrder } from '../../models/ordercloud/DOrder';
+import { DeliveryTypes, DOrder } from '../../models/ordercloud/DOrder';
 import { DOrderWorksheet } from '../../models/ordercloud/DOrderWorksheet';
 import { DPayment } from '../../models/ordercloud/DPayment';
 import { DOrderPromotion } from '../../models/ordercloud/DOrderPromotion';
@@ -62,7 +62,7 @@ const initialState: OcCurrentOrderState = {
 
 async function createOrder(orderName: string): Promise<RequiredDeep<DOrder>> {
   return await Orders.Create<DOrder>('All', {
-    xp: { DeliveryType: 'Ship', Name: orderName },
+    xp: { DeliveryType: DeliveryTypes.Ship, Name: orderName },
   });
 }
 
@@ -341,7 +341,7 @@ export const patchOrder = createOcAsyncThunk<RequiredDeep<DOrder>, PartialDeep<D
   async (partialOrder, ThunkAPI) => {
     const { ocCurrentCart } = ThunkAPI.getState();
     const orderID = ocCurrentCart.order.ID;
-    if (partialOrder?.xp?.DeliveryType === 'Ship') {
+    if (partialOrder?.xp?.DeliveryType === DeliveryTypes.Ship) {
       await ThunkAPI.dispatch(removeShippingAddress());
     }
     return await Orders.Patch('All', orderID, partialOrder);

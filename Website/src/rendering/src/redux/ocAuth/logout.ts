@@ -1,5 +1,4 @@
 import { AccessToken, Auth, Configuration, Tokens } from 'ordercloud-javascript-sdk';
-import { clearProductList } from '../ocProductList';
 import { createOcAsyncThunk, OcThrottle } from '../ocReduxHelpers';
 import { clearUser, getUser } from '../ocUser';
 import { clearAllOrders } from '../ocUnsubmittedOrders';
@@ -21,7 +20,6 @@ const logout = createOcAsyncThunk<AccessToken | undefined>(
     }
 
     thunkAPI.dispatch(clearUser());
-    thunkAPI.dispatch(clearProductList());
     thunkAPI.dispatch(cleanProductCache());
     thunkAPI.dispatch(clearCurrentOrder());
     thunkAPI.dispatch(clearAllOrders());

@@ -6,9 +6,9 @@ import { retrieveCart } from './ocCurrentCart';
 import { useAppDispatch, useAppSelector } from './store';
 import { getUser } from './ocUser';
 import { Configuration, Tokens } from 'ordercloud-javascript-sdk';
-import { isCommerceEnabled } from '../helpers/CommerceHelper';
 import { useRouter } from 'next/router';
 import { Actions, PageController } from '@sitecore-discover/react';
+import { isOrderCloudEnabled } from '../helpers/OrderCloudHelper';
 
 // TODO: Look into decoupling OrderCloud, Auth0, and Discover logic to keep this file for OrderCloud code only
 
@@ -64,7 +64,7 @@ const OcProvider: FunctionComponent = ({ children }) => {
   }));
 
   useEffect(() => {
-    if (isCommerceEnabled && hasCheckedForToken) {
+    if (isOrderCloudEnabled && hasCheckedForToken) {
       if (!ocAuth.initialized) {
         dispatch(initializeAuth());
       } else if (ocAuth.isAnonymous && !ocAuth.isAuthenticated) {
