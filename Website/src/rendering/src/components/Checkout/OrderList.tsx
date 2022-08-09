@@ -13,6 +13,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faShareAlt, faTrashAlt } from '@fortawesome/free-solid-svg-icons';
 import useOcAuth from '../../hooks/useOcAuth';
 import Spinner from '../../components/ShopCommon/Spinner';
+import toast from 'react-hot-toast';
 
 const OrderList = (): JSX.Element => {
   const dispatch = useAppDispatch();
@@ -44,6 +45,12 @@ const OrderList = (): JSX.Element => {
     </button>
   );
 
+  const getShareLink = () => {
+    const link = `${window.location.origin}/projects/${order.ID}`;
+    navigator.clipboard.writeText(link);
+    toast.success('Link copied!');
+  };
+
   // TODO: add functionality to button
   const btnShare = !initialized ? (
     <Skeleton width={150} height={44} className="btn-share btn-secondary" />
@@ -52,7 +59,7 @@ const OrderList = (): JSX.Element => {
       className="btn-share btn-secondary"
       aria-label="Share"
       type="button"
-      //onClick={() => getShareLink()}
+      onClick={() => getShareLink()}
       disabled={isLoading}
     >
       <Spinner loading={isLoading} />
