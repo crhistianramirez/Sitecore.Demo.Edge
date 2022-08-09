@@ -50,8 +50,7 @@ const CartDetails = (): JSX.Element => {
     if (!initialized) {
       return <Skeleton containerClassName="skeleton-heading" height={30} />;
     } else if (order?.LineItemCount) {
-      // TODO: Change to order?.xp?.Name
-      return <h2>{order?.ID}</h2>;
+      return <h2>{order.xp?.Name ? `${order.xp?.Name} (${order.ID})` : order.ID}</h2>;
     } else {
       return <></>;
     }

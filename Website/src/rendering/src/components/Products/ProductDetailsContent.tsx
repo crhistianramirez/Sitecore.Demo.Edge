@@ -65,6 +65,9 @@ const ProductDetailsContent = ({
   );
 
   const [orderId, setOrderId] = useState(currentOrderState.order?.ID);
+  const [createNewProject, setCreateNewProject] = useState(!!orderId);
+  const [orderName, setOrderName] = useState('');
+  const [showModal, setShowModal] = useState(false);
 
   const determineDefaultOptionId = (spec: Spec) => {
     if (spec.DefaultOptionID) {
@@ -200,6 +203,7 @@ const ProductDetailsContent = ({
       const response = await dispatch(
         createLineItem({
           orderId: orderId != '' ? orderId : null,
+          orderName: orderName,
           lineItem: {
             ProductID: product.ID,
             Quantity: quantity,
@@ -234,9 +238,10 @@ const ProductDetailsContent = ({
 
       if (orderId == '') {
         setOrderId(resOrder?.Order.ID);
+        setCreateNewProject(false);
       }
     },
-    [dispatch, orderId, product, specValues, quantity, dispatchDiscoverAddToCartEvent]
+    [dispatch, orderId, orderName, product, quantity, specValues, dispatchDiscoverAddToCartEvent]
   );
 
   const productImageProps =
@@ -307,8 +312,20 @@ const ProductDetailsContent = ({
 
   const btnText = `${lineItem ? 'Update' : 'Add To'} Cart`;
 
+  const openCreateProjectModel = () => {
+    setShowModal(true);
+  };
+
+  const closeCreateProjectModel = () => {
+    setShowModal(false);
+  };
+
   const btnAddToCart = initialLoading ? (
     <Skeleton className="btn-main" width={168} />
+  ) : createNewProject ? (
+    <button type="button" className="btn-main" onClick={openCreateProjectModel}>
+      {btnText}
+    </button>
   ) : (
     <button type="submit" className="btn-main" disabled={loading}>
       <Spinner loading={loading} />
@@ -318,6 +335,17 @@ const ProductDetailsContent = ({
 
   const handleProjectChange = (e: ChangeEvent<HTMLSelectElement>) => {
     setOrderId(e.target.value);
+    setCreateNewProject(e.target.value == '');
+  };
+
+  const handleProjectNameChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setOrderName(e.target.value);
+  };
+
+  const handleModalSubmit = (e: FormEvent) => {
+    setShowModal(false);
+    handleAddToCart(e);
+    setOrderName('');
   };
 
   const selectProject = isUserLoggedIn ? (
@@ -332,9 +360,8 @@ const ProductDetailsContent = ({
         value={orderId}
       >
         {currentOrderState.orders?.map((order) => (
-          // TODO: change value to order?.xp?.Name
           <option key={order.ID} value={order.ID}>
-            {order.ID}
+            {order.xp?.Name ? order.xp?.Name : order.ID}
           </option>
         ))}
         <option key="new" value="">
@@ -408,12 +435,50 @@ const ProductDetailsContent = ({
       <div>Product not found</div>
     );
 
+  const modal = (
+    <>
+      <input
+        type="checkbox"
+        id="create-project-modal"
+        className="modal-toggle"
+        checked={showModal} />
+      <div className="modal">
+        <div className="modal-box relative">
+          <label
+            htmlFor="create-project-modal"
+            className="btn btn-sm btn-circle absolute right-2 top-2"
+            onClick={closeCreateProjectModel}
+          >
+            ✕
+          </label>
+          <h3 className="font-bold text-lg">New Project</h3>
+          <div className="product-create-project form">
+            <label htmlFor="projectName">Project Name</label>
+            <input
+              type="text"
+              id="projectName"
+              required
+              onChange={handleProjectNameChange}
+              value={orderName}
+            />
+          </div>
+          <div className="modal-action">
+            <label htmlFor="create-project-modal" className="btn-main" onClick={handleModalSubmit}>
+              Continue
+            </label>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+
   return (
     <>
       <Head>
         <title>PLAY! SHOP - {pageTitle}</title>
       </Head>
       {productDetails}
+      {modal}
     </>
   );
 };

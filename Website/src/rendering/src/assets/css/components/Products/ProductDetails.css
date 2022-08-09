@@ -1,3 +1,14 @@
+.shop-main-container {
+  .modal input {
+    @apply italic px-2 py-1 mt-1 border-2 border-black-lightest w-full;
+
+    &:focus,
+    &:active {
+      @apply rounded-none outline-none;
+    }
+  }
+}
+
 .product-details {
   &-hero {
     @apply grid grid-cols-1 gap-3;

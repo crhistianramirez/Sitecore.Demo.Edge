@@ -1,9 +1,9 @@
-import { ChangeEvent } from 'react';
+import { ChangeEvent, useState } from 'react';
+import { Order } from 'ordercloud-javascript-sdk';
 import useOcCurrentOrderState from '../../hooks/useOcCurrentCart';
 import {
-  retrieveOrders,
   clearCurrentOrder,
-  clearAllOrders,
+  createNewOrder,
   deleteCurrentOrder,
   retrieveCart,
 } from '../../redux/ocCurrentCart';
@@ -17,32 +17,13 @@ const OrderList = (): JSX.Element => {
   const dispatch = useAppDispatch();
   const { order, orders, initialized } = useOcCurrentOrderState();
   const { isAnonymous } = useOcAuth();
-
-  const handleGetOrders = async () => {
-    await dispatch(retrieveOrders());
-  };
-
-  const handleClearOrders = async () => {
-    await dispatch(clearAllOrders());
-  };
+  const [selectedOrder, setSelectedOrder] = useState(order?.ID);
+  const [orderName, setOrderName] = useState('');
+  const [showModal, setShowModal] = useState(false);
 
   const handleDeleteOrder = async () => {
     await dispatch(deleteCurrentOrder());
   };
-
-  // TODO: add functionality to button
-  const btnDefault = !initialized ? (
-    <Skeleton width={150} height={44} className="btn-make-default btn-secondary" />
-  ) : (
-    <button
-      className="btn-make-default btn-secondary"
-      aria-label="Make Default"
-      type="button"
-      //onClick={() => handleClearOrders()}
-    >
-      Make Default
-    </button>
-  );
 
   const btnDelete = !initialized ? (
     <Skeleton width={150} height={44} className="btn-delete btn-secondary" />
@@ -65,24 +46,55 @@ const OrderList = (): JSX.Element => {
       className="btn-share btn-secondary"
       aria-label="Share"
       type="button"
-      //onClick={() => handleGetOrders()}
+      //onClick={() => getShareLink()}
     >
       <FontAwesomeIcon icon={faShareAlt} size="lg" /> Share
     </button>
   );
 
-  // TODO: add functionality to button
+  const openCreateProjectModel = () => {
+    setShowModal(true);
+  };
+
   const btnNew = !initialized ? (
     <Skeleton width={150} height={44} className="btn-new btn-secondary" />
   ) : (
-    <button className="btn-new btn-secondary" aria-label="New Project" type="button">
+    <button
+      className="btn-new btn-secondary"
+      aria-label="New Project"
+      type="button"
+      onClick={openCreateProjectModel}
+    >
       <FontAwesomeIcon icon={faPlus} size="lg" /> New Project
     </button>
   );
 
+  const updateSelectedProject = (orderID: string) => {
+    if (order.ID != orderID) {
+      clearCurrentOrder();
+      dispatch(retrieveCart(orderID));
+      setSelectedOrder(orderID);
+    }
+  };
+
   const handleProjectChange = (e: ChangeEvent<HTMLSelectElement>) => {
-    clearCurrentOrder();
-    dispatch(retrieveCart(e.target.value));
+    updateSelectedProject(e.target.value);
+  };
+
+  const closeCreateProjectModel = () => {
+    setShowModal(false);
+  };
+
+  const handleProjectNameChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setOrderName(e.target.value);
+  };
+
+  const handleModalSubmit = async () => {
+    setShowModal(false);
+    const response = await dispatch(createNewOrder(orderName));
+    setOrderName('');
+    const order = response?.payload as Order;
+    updateSelectedProject(order?.ID);
   };
 
   const selectProject = !initialized ? (
@@ -91,30 +103,69 @@ const OrderList = (): JSX.Element => {
     <select
       className="selected-project"
       required
-      defaultValue={order?.ID}
+      value={selectedOrder}
       onChange={handleProjectChange}
     >
       {orders?.map((order) => (
-        // TODO: change value to order?.xp?.Name
         <option key={order.ID} value={order.ID}>
-          {order.ID}
+          {order.xp?.Name ? order.xp?.Name : order.ID}
         </option>
       ))}
     </select>
   );
 
+  const modal = (
+    <>
+      <input
+        type="checkbox"
+        id="create-project-modal"
+        className="modal-toggle"
+        checked={showModal}
+      />
+      <div className="modal">
+        <div className="modal-box relative">
+          <label
+            htmlFor="create-project-modal"
+            className="btn btn-sm btn-circle absolute right-2 top-2"
+            onClick={closeCreateProjectModel}
+          >
+            ✕
+          </label>
+          <h3 className="font-bold text-lg">New Project</h3>
+          <div className="product-create-project form">
+            <label htmlFor="projectName">Project Name</label>
+            <input
+              type="text"
+              id="projectName"
+              required
+              onChange={handleProjectNameChange}
+              value={orderName}
+            />
+          </div>
+          <div className="modal-action">
+            <label htmlFor="create-project-modal" className="btn-main" onClick={handleModalSubmit}>
+              Continue
+            </label>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+
   const getContent = () => {
     if (!isAnonymous) {
       return (
-        <div className="manage-projects">
-          <form className="form">
-            {selectProject}
-            {btnDefault}
-            {btnDelete}
-            {btnShare}
-            {btnNew}
-          </form>
-        </div>
+        <>
+          <div className="manage-projects">
+            <form className="form">
+              {selectProject}
+              {btnDelete}
+              {btnShare}
+              {btnNew}
+            </form>
+          </div>
+          {modal}
+        </>
       );
     } else {
       return <></>;

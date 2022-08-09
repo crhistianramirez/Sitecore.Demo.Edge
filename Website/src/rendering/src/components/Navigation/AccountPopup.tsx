@@ -59,11 +59,6 @@ const AccountPopup = ({ onNavigatingAway }: AccountPopupProps): JSX.Element => {
 
   const loggedInMenuItems = isUserLoggedIn && (
     <>
-      <Link href="/account/projects">
-        <a className="btn-secondary-light" onClick={onNavigatingAway}>
-          Projects
-        </a>
-      </Link>
       <Link href="/account/address-book">
         <a className="btn-secondary-light" onClick={onNavigatingAway}>
           Address book

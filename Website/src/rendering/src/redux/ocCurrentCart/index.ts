@@ -34,7 +34,13 @@ export interface RecentOrder {
 
 export interface CreateLineItemRequest {
   orderId: string;
+  orderName: string;
   lineItem: DLineItem;
+}
+
+export interface CreateOrderRequest {
+  orderId: string;
+  orderName: string;
 }
 
 export interface OcCurrentOrderState {
@@ -54,9 +60,21 @@ const initialState: OcCurrentOrderState = {
   orderTotalLoading: false,
 };
 
-async function createOrder(orderId: string): Promise<RequiredDeep<DOrder>> {
-  return await Orders.Create<DOrder>('All', { ID: orderId, xp: { DeliveryType: 'Ship' } });
+async function createOrder(orderName: string): Promise<RequiredDeep<DOrder>> {
+  return await Orders.Create<DOrder>('All', {
+    xp: { DeliveryType: 'Ship', Name: orderName },
+  });
 }
+
+export const createNewOrder = createOcAsyncThunk<DOrder, string>(
+  'ocCurrentCart/createNewOrder',
+  async (orderName, ThunkAPI) => {
+    const order = await createOrder(orderName);
+    await ThunkAPI.dispatch(retrieveCart(order.ID));
+    await ThunkAPI.dispatch(retrieveOrders());
+    return order;
+  }
+);
 
 const clearOrderAndRefreshState = createOcAsyncThunk<undefined, undefined>(
   'ocCurrentCart/clearOrderAndRefreshState',
@@ -375,7 +393,7 @@ export const createLineItem = createOcAsyncThunk<
 
   // initialize the order if it doesn't exist already
   if (!orderId) {
-    const orderResponse = await createOrder(request.orderId);
+    const orderResponse = await createOrder(request.orderName);
     orderId = orderResponse.ID;
     // refresh order(s) states
     await ThunkAPI.dispatch(retrieveCart(orderId));
@@ -636,6 +654,7 @@ const ocCurrentCartSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
+    builder.addCase(createNewOrder.fulfilled, (state, action) => {});
     builder.addCase(retrieveOrders.fulfilled, (state, action) => {
       if (action.payload) {
         state.orders = action.payload;
