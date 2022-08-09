@@ -20,6 +20,7 @@ import 'assets/css/main.css';
 
 // DEMO TEAM CUSTOMIZATION - Implement per page layouts to conditionally load commerce on some pages https://nextjs.org/docs/basic-features/layouts#per-page-layouts
 import { NextPage } from 'next';
+import { Toaster } from 'react-hot-toast';
 
 type NextPageWithLayout = NextPage & {
   getLayout?: (page: ReactElement) => ReactElement;
@@ -86,6 +87,7 @@ function App({ Component, pageProps, router }: AppPropsWithLayout): JSX.Element 
         {/* DEMO TEAM CUSTOMIZATION (next line) - Per page layouts */}
         {component}
       </I18nProvider>
+      <Toaster />
     </>
   );
   // END CUSTOMIZATION

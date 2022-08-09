@@ -9,6 +9,7 @@ import ocProductList from './ocProductList';
 import ocProductDetail from './ocProductDetail';
 import ocCurrentCart from './ocCurrentCart';
 import ocAddressBook from './ocAddressBook';
+import ocSharedProject from './ocSharedProject';
 
 const store = configureStore({
   reducer: {
@@ -18,6 +19,7 @@ const store = configureStore({
     ocAddressBook,
     ocProductCache,
     ocPreviewSearch,
+    ocSharedProject,
     ocProductList,
     ocProductDetail,
     ocCurrentCart,
