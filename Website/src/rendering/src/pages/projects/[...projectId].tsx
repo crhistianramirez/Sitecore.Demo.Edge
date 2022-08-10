@@ -73,7 +73,8 @@ const SharedProject = (): JSX.Element => {
           <h1>Project {order.xp.Name}</h1>
           <small>
             <strong>Created by</strong> {order.FromUser.FirstName + order.FromUser.LastName}
-          </small><br />
+          </small>
+          <br />
           <small>
             <strong># of Items</strong> {order.LineItemCount}
           </small>

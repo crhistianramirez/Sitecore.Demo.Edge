@@ -1,11 +1,5 @@
 import Head from 'next/head';
-import {
-  BuyerProduct,
-  LineItem,
-  RequiredDeep,
-  Spec,
-  Variant,
-} from 'ordercloud-javascript-sdk';
+import { BuyerProduct, LineItem, RequiredDeep, Spec, Variant } from 'ordercloud-javascript-sdk';
 import { ChangeEvent, FormEvent, useCallback, useEffect, useState } from 'react';
 import { createLineItem } from '../../redux/ocCurrentCart';
 import useOcAuth from '../../hooks/useOcAuth';
@@ -441,7 +435,8 @@ const ProductDetailsContent = ({
         type="checkbox"
         id="create-project-modal"
         className="modal-toggle"
-        checked={showModal} />
+        checked={showModal}
+      />
       <div className="modal">
         <div className="modal-box relative">
           <label
