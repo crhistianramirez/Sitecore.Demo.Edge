@@ -3,6 +3,7 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { ReactElement, useEffect } from 'react';
 import Skeleton from 'react-loading-skeleton';
+import useOcAuth from 'src/hooks/useOcAuth';
 import useOcSharedProject from 'src/hooks/useOcSharedProject';
 import { DLineItem } from 'src/models/ordercloud/DLineItem';
 import { retrieveProject } from 'src/redux/ocSharedProject';
@@ -55,14 +56,15 @@ const LineItemList = (props: LineItemListProps): JSX.Element => {
 const SharedProject = (): JSX.Element => {
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const { isAuthenticated } = useOcAuth();
   const { order, lineItems, loading, initialized } = useOcSharedProject();
 
   useEffect(() => {
-    if (!router.query?.projectId) {
+    if (!router.query?.projectId || !isAuthenticated) {
       return;
     }
     dispatch(retrieveProject(router.query.projectId as string));
-  }, [router.query?.projectId, dispatch]);
+  }, [router.query?.projectId, dispatch, isAuthenticated]);
 
   return (
     <div className="cart-details shop-container">
