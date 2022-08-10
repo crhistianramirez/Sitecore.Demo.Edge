@@ -7,6 +7,7 @@
 
   .selected-project {
     @apply mr-2;
+
     width: 40%;
   }
 
@@ -19,7 +20,7 @@
   }
 
   .btn-secondary {
-    @apply text-sm mr-2
+    @apply text-sm mr-2;
   }
 
   .btn-new {

@@ -1,17 +1,18 @@
 .modal {
+  --tw-bg-opacity: 0.4;
+
   pointer-events: none;
   visibility: hidden;
   position: fixed;
-  top: 0px;
-  right: 0px;
-  bottom: 0px;
-  left: 0px;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   display: flex;
   justify-content: center;
   opacity: 0;
   z-index: 999;
   background-color: hsl(var(--nf, var(--n)) / var(--tw-bg-opacity));
-  --tw-bg-opacity: 0.4;
   transition-duration: 200ms;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-property: transform, opacity;
@@ -24,15 +25,20 @@
   align-items: center;
 }
 
-.modal-open, .modal:target, .modal-toggle:checked + .modal {
+.modal-open,
+.modal:target,
+.modal-toggle:checked + .modal {
   pointer-events: auto;
-    visibility: visible;
-    opacity: 1;
+  visibility: visible;
+  opacity: 1;
 }
 
 .modal-box {
-  max-height: calc(100vh - 5em);
+  --tw-scale-x: 0.9;
+  --tw-scale-y: 0.9;
   --tw-bg-opacity: 1;
+
+  max-height: calc(100vh - 5em);
   background-color: hsl(var(--b1) / var(--tw-bg-opacity));
   padding: 1.5rem;
   transition-property: color, background-color, border-color, fill, stroke, opacity, box-shadow, transform, filter, -webkit-text-decoration-color, -webkit-backdrop-filter;
@@ -42,8 +48,6 @@
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   width: 91.666667%;
   max-width: 32rem;
-  --tw-scale-x: .9;
-  --tw-scale-y: .9;
   transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
   border-top-left-radius: var(--rounded-box, 1rem);
   border-top-right-radius: var(--rounded-box, 1rem);
@@ -55,10 +59,13 @@
   overscroll-behavior: contain;
 }
 
-.modal-open .modal-box, .modal-toggle:checked + .modal .modal-box, .modal:target .modal-box {
-  --tw-translate-y: 0px;
+.modal-open .modal-box,
+.modal-toggle:checked + .modal .modal-box,
+.modal:target .modal-box {
+  --tw-translate-y: 0;
   --tw-scale-x: 1;
   --tw-scale-y: 1;
+
   transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
 }
 

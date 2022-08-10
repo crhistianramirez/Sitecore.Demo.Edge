@@ -70,6 +70,7 @@
 
         .selected-project {
           @apply mr-2;
+
           width: 40%;
         }
 
