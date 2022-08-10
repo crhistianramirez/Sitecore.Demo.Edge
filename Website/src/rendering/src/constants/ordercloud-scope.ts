@@ -7,4 +7,6 @@ export const orderCloudScope = [
   'MeXpAdmin',
   'MeCreditCardAdmin',
   'MeAddressAdmin',
+  'OrderReader', // added to allow users to view other users projects'
+  'UnsubmittedOrderReader', // added to allow users to view other users projects'
 ] as ApiRole[];
